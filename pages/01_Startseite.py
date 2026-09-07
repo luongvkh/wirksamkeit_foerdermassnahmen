@@ -12,7 +12,7 @@ Laut dem Women in Digital Scoreboard 2024 der EU-Kommission liegt der Frauenante
 insgesamt bei nur 17% - und bis zu 57 % der Frauen verlassen die IT-Branche im mittleren Karrierestadium (*Leaky Pipeline*).
 
 Bisherige Forschung und Fördermaßnahmen behandeln Frauen dabei oft als homogene Gruppe. Die intersektionale Perspektive zeigt
-jedoch, dass Frauen mit mehreren Diversitätsmerkmalen (z. B. Migrationshintergrund + Mutterschaft + LGBTQ+-Identität)
+jedoch, dass Frauen mit mehreren Diversitätsmerkmalen (z. B. Migrationshintergrund × Mutterschaft × LGBTQ+-Identität)
 unterschiedlich ausgeprägte Karrierebarrieren erleben. Dieses Projekt soll zeigen, dass Personen mit verschiedenen
 intersektionalen Konstellationen unterschiedlich stark von Fördermaßnahmen profitieren können.
 
