@@ -201,7 +201,7 @@ def calculate_effectiveness(df, selected_avs):
     """
     Berechnet durchschnittliche Wirksamkeitsbewertung und Prozentzahl aller Bewertungen je Maßnahme.
 
-    `selected_avs`: Liste von AV-Spalten (abhängige Variablen, z.B. rating_mentoring)<br/>
+    `selected_avs`: Liste von AV-Spalten (abhängige Variablen, z.B. rating_mentoring)
     """
     results = []
 
@@ -229,7 +229,7 @@ def calculate_availability(df, selected_avs):
     Berechnet Verfügbarkeit der Maßnahmen im Unternehmen.
     Gibt Prozentsatz der Teilnehmenden zurück, bei denen die Maßnahme verfügbar ist.
 
-    `selected_avs`: Liste von AV-Spalten (abhängige Variablen, z.B. rating_mentoring)<br/>
+    `selected_avs`: Liste von AV-Spalten (abhängige Variablen, z.B. rating_mentoring)
     """
     availability_col_map = {
         "rating_flexibility": (
