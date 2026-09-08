@@ -137,8 +137,6 @@ with st.expander("Datenbereinigung", expanded=False):
         )
     )
 
-st.divider()
-
 # filter dimensions
 df_filtered = filter_df_dimensions(df, selected_dims, dim_kombination)
 n_filtered = len(df_filtered)
@@ -163,7 +161,7 @@ if dim_kombination:
 else:
     merkmale_text = " | ".join(dim_labels)
 
-with st.expander("Profil-Beschreibung", expanded=True):
+with st.expander("Profil-Beschreibung", expanded=False):
     st.markdown("### Identitätsmerkmale")
     st.markdown(f"{merkmale_text}")
 
@@ -184,6 +182,243 @@ if n_filtered < 10:
         f"Nur {n_filtered} Teilnehmende mit diesem Profil gefunden. Ergebnisse sind statistisch evtl. nicht aussagekräftig.",
         icon=":material/error:",
     )
+
+# ----- Überblick: Gesamtdatensatz -----
+with st.expander("Überblick: Gesamtdatensatz", expanded=False):
+    st.markdown(
+        f":grey[Die folgenden Diagramme basieren auf dem gesamten Datensatz (n = {filter_log['n_final']}), unabhängig von der aktuellen Filterauswahl.]"
+    )
+
+    tab1, tab2, tab3 = st.tabs(
+        [
+            "Identitätsmerkmale × Maßnahmen",
+            "Karrierebarrieren × Maßnahmen",
+            "i-Score × Maßnahmen",
+        ]
+    )
+
+    with tab1:
+        # ----- Heatmap: Identitätsmerkmale × Maßnahmen -----
+        st.markdown("## Überblick: Identitätsmerkmale × Fördermaßnahmen")
+        st.markdown(":grey[Durchschnittliche Maßnahmenbewertung je Identitätsmerkmal.]")
+
+        # avg_rating aller Maßnahmen für jedes Identitätsmerkmal berechnen
+        dim_heatmap_data = []
+
+        for dim_col in IDENTITY_COLS:
+            df_has_dim = df[df[dim_col] == True]
+            wirksamkeit_has_dim = calculate_effectiveness(df_has_dim, list(RATING_COLS))
+
+            for _, row in wirksamkeit_has_dim.iterrows():
+                dim_heatmap_data.append(
+                    {
+                        "Identitätsmerkmal": IDENTITY_LABELS[dim_col],
+                        "Fördermaßnahme": row["massnahme_label"],
+                        "Ø Bewertung": row["avg_rating"],
+                    }
+                )
+
+        df_dim_heatmap = pd.DataFrame(dim_heatmap_data)
+
+        # Pivot für Heatmap-Format
+        df_dim_heatmap_pivoted = df_dim_heatmap.pivot(
+            index="Fördermaßnahme", columns="Identitätsmerkmal", values="Ø Bewertung"
+        )
+
+        fig_dim_heatmap = px.imshow(
+            df_dim_heatmap_pivoted,
+            color_continuous_scale="Inferno",
+            zmin=0,
+            zmax=2,
+            text_auto=".2f",
+            aspect="equal",
+            labels={"color": "Ø Bewertung"},
+            height=538,
+        )
+
+        fig_dim_heatmap.update_layout(
+            xaxis_title="",
+            yaxis_title="",
+            coloraxis_colorbar=dict(
+                title="Ø Bewertung",
+                tickvals=[0, 1, 2],
+                ticktext=["0 - spielt keine Rolle", "1 - hilfreich", "2 - essentiell"],
+            ),
+        )
+        st.plotly_chart(fig_dim_heatmap, width="stretch")
+
+    with tab2:
+        # ----- Heatmap: Karrierebarrieren × Maßnahmen -----
+        st.markdown("## Überblick: Karrierebarrieren × Fördermaßnahmen")
+        st.markdown(":grey[Durchschnittliche Maßnahmenbewertung je Karrierebarriere.]")
+
+        barrier_heatmap_data = []
+
+        for barrier_col in BARRIER_COLS:
+            df_has_barrier = df[df[barrier_col] == True]
+            if len(df_has_barrier) < 5:
+                continue
+            effectiveness = calculate_effectiveness(df_has_barrier, list(RATING_COLS))
+            for _, row in effectiveness.iterrows():
+                barrier_heatmap_data.append(
+                    {
+                        "Karrierebarriere": BARRIER_LABELS[barrier_col],
+                        "Fördermaßnahme": row["massnahme_label"],
+                        "Ø Bewertung": row["avg_rating"],
+                    }
+                )
+
+        df_barrier_heatmap = pd.DataFrame(barrier_heatmap_data)
+        df_barrier_heatmap_pivoted = df_barrier_heatmap.pivot(
+            index="Fördermaßnahme", columns="Karrierebarriere", values="Ø Bewertung"
+        )
+
+        fig_barrier_heatmap = px.imshow(
+            df_barrier_heatmap_pivoted,
+            color_continuous_scale="Inferno",
+            zmin=0,
+            zmax=2,
+            text_auto=".2f",
+            aspect="equal",
+            labels={"color": "Ø Bewertung"},
+            height=600,
+        )
+        fig_barrier_heatmap.update_layout(
+            xaxis_title="",
+            yaxis_title="",
+            coloraxis_colorbar=dict(
+                title="Ø Bewertung",
+                tickvals=[0, 1, 2],
+                ticktext=["0 - spielt keine Rolle", "1 - hilfreich", "2 - essentiell"],
+            ),
+        )
+        st.plotly_chart(fig_barrier_heatmap, width="stretch")
+
+    with tab3:
+        # ----- Heatmap: i-Score-Kategorie × Maßnahmen & Boxplot: i-Score × Maßnahmen -----
+        st.markdown("## Überblick: i-Score × Fördermaßnahmen")
+        st.markdown(
+            ":grey[Durchschnittliche Maßnahmenbewertung je additivem Intersektionalitäts-Score (*i-Score*).]"
+        )
+
+        i_score_ansicht = st.radio(
+            "Ansicht",
+            options=[
+                "i-Score kontinuierlich (1-6)",
+                "i-Score-Kategorie (niedrig, mittel, hoch)",
+            ],
+            horizontal=True,
+            key="i_score_ansicht",
+        )
+
+        # Heatmap: i-Score kontinuierlich (1-6) × Maßnahmen
+        if i_score_ansicht == "i-Score kontinuierlich (1-6)":
+            i_score_heatmap_data = []
+            for rating_col in RATING_COLS:
+                df_grouped = df[["i_score_additiv", rating_col]].dropna()
+                grouped = (
+                    df_grouped.groupby("i_score_additiv")[rating_col]
+                    .mean()
+                    .reset_index()
+                )
+                for _, row in grouped.iterrows():
+                    i_score_heatmap_data.append(
+                        {
+                            "i-Score (Anzahl Merkmale)": int(row["i_score_additiv"]),
+                            "Fördermaßnahme": RATING_LABELS[rating_col],
+                            "Ø Bewertung": round(row[rating_col], 2),
+                        }
+                    )
+
+            df_i_score_heatmap = pd.DataFrame(i_score_heatmap_data)
+            df_i_score_heatmap_pivoted = df_i_score_heatmap.pivot(
+                index="Fördermaßnahme",
+                columns="i-Score (Anzahl Merkmale)",
+                values="Ø Bewertung",
+            )
+
+            fig_i_score_heatmap = px.imshow(
+                df_i_score_heatmap_pivoted,
+                color_continuous_scale="Inferno",
+                zmin=0,
+                zmax=2,
+                text_auto=".2f",
+                aspect="equal",
+                labels={"color": "Ø Bewertung"},
+                height=530,
+            )
+            fig_i_score_heatmap.update_layout(
+                xaxis_title="i-Score",
+                yaxis_title="",
+                coloraxis_colorbar=dict(
+                    title="Ø Bewertung",
+                    tickvals=[0, 1, 2],
+                    ticktext=[
+                        "0 - spielt keine Rolle",
+                        "1 - hilfreich",
+                        "2 - essentiell",
+                    ],
+                ),
+            )
+            st.plotly_chart(fig_i_score_heatmap, width="stretch")
+            st.caption("i-Score = Anzahl zutreffender Identitätsmerkmale (1-6)")
+
+        else:
+            # Heatmap: i-Score-Kategorie (niedrig, mittel, hoch) × Maßnahmen
+            i_score_heatmap_data = []
+            for kategorie in ["niedrig (1)", "mittel (2)", "hoch (≥3)"]:
+                df_kategorie = df[df["i_score_kategorie"] == kategorie]
+                if len(df_kategorie) < 5:
+                    continue
+                effectiveness = calculate_effectiveness(df_kategorie, list(RATING_COLS))
+                for _, row in effectiveness.iterrows():
+                    i_score_heatmap_data.append(
+                        {
+                            "i-Score-Kategorie": kategorie,
+                            "Fördermaßnahme": row["massnahme_label"],
+                            "Ø Bewertung": row["avg_rating"],
+                        }
+                    )
+
+            df_i_score_heatmap = pd.DataFrame(i_score_heatmap_data)
+            df_i_score_heatmap_pivoted = df_i_score_heatmap.pivot(
+                index="Fördermaßnahme",
+                columns="i-Score-Kategorie",
+                values="Ø Bewertung",
+            )
+
+            # Spalten ordnen
+            df_i_score_heatmap_pivoted = df_i_score_heatmap_pivoted[
+                ["niedrig (1)", "mittel (2)", "hoch (≥3)"]
+            ]
+
+            fig_i_score_heatmap = px.imshow(
+                df_i_score_heatmap_pivoted,
+                color_continuous_scale="Inferno",
+                zmin=0,
+                zmax=2,
+                text_auto=".2f",
+                aspect="equal",
+                labels={"color": "Ø Bewertung"},
+                height=530,
+            )
+            fig_i_score_heatmap.update_layout(
+                xaxis_title="i-Score-Kategorie",
+                yaxis_title="",
+                coloraxis_colorbar=dict(
+                    title="Ø Bewertung",
+                    tickvals=[0, 1, 2],
+                    ticktext=[
+                        "0 - spielt keine Rolle",
+                        "1 - hilfreich",
+                        "2 - essentiell",
+                    ],
+                ),
+            )
+            st.plotly_chart(fig_i_score_heatmap, width="stretch")
+            st.caption(
+                "i-Score-Kategorien: niedrig = 1 Merkmal · mittel = 2 Merkmale · hoch ≥ 3 Merkmale"
+            )
 
 st.divider()
 
@@ -405,106 +640,6 @@ fig_vgl_gesamt = px.bar(
 
 st.plotly_chart(fig_vgl_gesamt, width="stretch")
 st.caption("Bewertungsskala: 0 = spielt keine Rolle · 1 = hilfreich · 2 = essentiell")
-
-st.divider()
-
-# ----- Heatmap: Identitätsmerkmale × Maßnahmen -----
-st.markdown("## Überblick: Identitätsmerkmale × Fördermaßnahmen")
-st.markdown(":grey[Durchschnittliche Maßnahmenbewertung je Identitätsmerkmal.]")
-
-# avg_rating aller Maßnahmen für jedes Identitätsmerkmal berechnen
-dim_heatmap_data = []
-
-for dim_col in IDENTITY_COLS:
-    df_has_dim = df[df[dim_col] == True]
-    wirksamkeit_has_dim = calculate_effectiveness(df_has_dim, list(RATING_COLS))
-
-    for _, row in wirksamkeit_has_dim.iterrows():
-        dim_heatmap_data.append(
-            {
-                "Identitätsmerkmal": IDENTITY_LABELS[dim_col],
-                "Fördermaßnahme": row["massnahme_label"],
-                "Ø Bewertung": row["avg_rating"],
-            }
-        )
-
-df_dim_heatmap = pd.DataFrame(dim_heatmap_data)
-
-# Pivot für Heatmap-Format
-df_dim_heatmap_pivoted = df_dim_heatmap.pivot(
-    index="Fördermaßnahme", columns="Identitätsmerkmal", values="Ø Bewertung"
-)
-
-fig_dim_heatmap = px.imshow(
-    df_dim_heatmap_pivoted,
-    color_continuous_scale="Inferno",
-    zmin=0,
-    zmax=2,
-    text_auto=".2f",
-    aspect="equal",
-    labels={"color": "Ø Bewertung"},
-    height=600,
-)
-
-fig_dim_heatmap.update_layout(
-    xaxis_title="",
-    yaxis_title="",
-    coloraxis_colorbar=dict(
-        title="Ø Bewertung",
-        tickvals=[0, 1, 2],
-        ticktext=["0 - spielt keine Rolle", "1 - hilfreich", "2 - essentiell"],
-    ),
-)
-
-st.plotly_chart(fig_dim_heatmap, width="stretch")
-
-st.divider()
-
-# ----- Heatmap: Karrierebarrieren × Maßnahmen -----
-st.markdown("## Überblick: Karrierebarrieren × Fördermaßnahmen")
-st.markdown(":grey[Durchschnittliche Maßnahmenbewertung je Karrierebarriere.]")
-
-barrier_heatmap_data = []
-
-for barrier_col in BARRIER_COLS:
-    df_has_barrier = df[df[barrier_col] == True]
-    if len(df_has_barrier) < 5:
-        continue
-    wirksamkeit = calculate_effectiveness(df_has_barrier, list(RATING_COLS))
-    for _, row in wirksamkeit.iterrows():
-        barrier_heatmap_data.append(
-            {
-                "Karrierebarriere": BARRIER_LABELS[barrier_col],
-                "Fördermaßnahme": row["massnahme_label"],
-                "Ø Bewertung": row["avg_rating"],
-            }
-        )
-
-df_barrier_heatmap = pd.DataFrame(barrier_heatmap_data)
-df_barrier_heatmap_pivoted = df_barrier_heatmap.pivot(
-    index="Fördermaßnahme", columns="Karrierebarriere", values="Ø Bewertung"
-)
-
-fig_barrier_heatmap = px.imshow(
-    df_barrier_heatmap_pivoted,
-    color_continuous_scale="Inferno",
-    zmin=0,
-    zmax=2,
-    text_auto=".2f",
-    aspect="equal",
-    labels={"color": "Ø Bewertung"},
-    height=600,
-)
-fig_barrier_heatmap.update_layout(
-    xaxis_title="",
-    yaxis_title="",
-    coloraxis_colorbar=dict(
-        title="Ø Bewertung",
-        tickvals=[0, 1, 2],
-        ticktext=["0 - spielt keine Rolle", "1 - hilfreich", "2 - essentiell"],
-    ),
-)
-st.plotly_chart(fig_barrier_heatmap, width="stretch")
 
 st.divider()
 
