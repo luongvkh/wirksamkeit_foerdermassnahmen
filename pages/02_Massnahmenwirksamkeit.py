@@ -259,7 +259,7 @@ with st.expander("Überblick: Gesamtdatensatz", expanded=False):
         for barrier_col in BARRIER_COLS:
             df_has_barrier = df[df[barrier_col] == True]
             if len(df_has_barrier) < 5:
-                continue
+                continue  # Mindeststichprobengröße von n = 5
             effectiveness = calculate_effectiveness(df_has_barrier, list(RATING_COLS))
             for _, row in effectiveness.iterrows():
                 barrier_heatmap_data.append(
@@ -371,7 +371,7 @@ with st.expander("Überblick: Gesamtdatensatz", expanded=False):
             for kategorie in ["niedrig (1)", "mittel (2)", "hoch (≥3)"]:
                 df_kategorie = df[df["i_score_kategorie"] == kategorie]
                 if len(df_kategorie) < 5:
-                    continue
+                    continue  # Mindeststichprobengröße von n = 5
                 effectiveness = calculate_effectiveness(df_kategorie, list(RATING_COLS))
                 for _, row in effectiveness.iterrows():
                     i_score_heatmap_data.append(
@@ -644,7 +644,9 @@ with st.expander(
     st.divider()
 
     st.markdown("### Frauenanteil")
-    st.markdown(":grey[Wie hoch ist der Frauenanteil im Team innerhalb des Unternehmens der Teilnehmenden?]")
+    st.markdown(
+        ":grey[Wie hoch ist der Frauenanteil im Team innerhalb des Unternehmens der Teilnehmenden?]"
+    )
 
     frauenanteil_data = []
     for womens_quota_label, col in WOMENS_QUOTA_MAPPING.items():
