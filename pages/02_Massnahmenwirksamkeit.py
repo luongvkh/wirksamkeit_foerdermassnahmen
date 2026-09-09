@@ -17,6 +17,8 @@ from constants import (
     BARRIER_COLS,
     BARRIER_LABELS,
     RATING_COLS,
+    FAMILY_FRIENDLINESS_MAPPING,
+    WOMENS_QUOTA_MAPPING,
 )
 
 # ----- Sidebar -----
@@ -592,6 +594,87 @@ else:
     st.caption(
         f"Hinweis: Für *Familienfreundlichkeit* und *Frauenanteil* werden keine Verfügbarkeitsdaten angezeigt, da die Maßnahmen im Datensatz nicht eindeutig als `verfügbar` / `nicht verfügbar` erfasst wurden."
     )
+
+with st.expander(
+    "Detailansicht: Familienfreundlichkeit & Frauenanteil", expanded=False
+):
+    st.markdown("### Familienfreundlichkeit")
+    st.markdown(":grey[Wie familienfreundlich ist das Unternehmen der Teilnehmenden?]")
+
+    fam_friendliness_data = []
+    for kriterium_label, orig_col in FAMILY_FRIENDLINESS_MAPPING.items():
+        values = df_filtered[orig_col].dropna()
+        n = len(values)
+        if n == 0:
+            continue
+        for antwort in ["ja", "teils", "nein"]:
+            fam_friendliness_data.append(
+                {
+                    "Kriterium": kriterium_label,
+                    "Antwort": antwort,
+                    "Anteil (%)": round((values == antwort).sum() / n * 100, 1),
+                }
+            )
+
+    df_fam_friendliness = pd.DataFrame(fam_friendliness_data)
+
+    fig_fam_friendliness = px.bar(
+        df_fam_friendliness,
+        x="Anteil (%)",
+        y="Kriterium",
+        color="Antwort",
+        orientation="h",
+        barmode="stack",
+        color_discrete_map={
+            "ja": ESSENTIELL_GELB,
+            "teils": HILFREICH_ROT,
+            "nein": SPIELT_KEINE_ROLLE_VIOLETT,
+        },
+        category_orders={"Antwort": ["ja", "teils", "nein"]},
+        labels={"Kriterium": ""},
+        height=400,
+        text="Anteil (%)",
+    )
+    fig_fam_friendliness.update_traces(textposition="inside")
+    st.plotly_chart(fig_fam_friendliness, width="stretch")
+    st.caption(
+        "Hinweis: *Reiseverpflichtungen* ist das einzige negative Kriterium, d.h. 'ja' bedeutet hier *weniger* Familienfreundlichkeit."
+    )
+
+    st.divider()
+
+    st.markdown("### Frauenanteil")
+    st.markdown(":grey[Wie hoch ist der Frauenanteil im Team innerhalb des Unternehmens der Teilnehmenden?]")
+
+    frauenanteil_data = []
+    for womens_quota_label, col in WOMENS_QUOTA_MAPPING.items():
+        values = df_filtered[col].dropna()
+        n = len(values)
+        if n == 0:
+            continue
+        frauenanteil_data.append(
+            {
+                "Frauenquote": womens_quota_label,
+                "Anteil (%)": round((values == "Ja").sum() / n * 100, 1),
+            }
+        )
+
+    df_frauenanteil = pd.DataFrame(frauenanteil_data)
+
+    fig_frauenanteil = px.bar(
+        df_frauenanteil,
+        x="Anteil (%)",
+        y="Frauenquote",
+        orientation="h",
+        color="Anteil (%)",
+        color_continuous_scale="Inferno",
+        range_color=[0, 100],
+        text="Anteil (%)",
+        labels={"Frauenquote": ""},
+        height=380,
+    )
+    fig_frauenanteil.update_traces(textposition="outside")
+    st.plotly_chart(fig_frauenanteil, width="stretch")
 
 st.divider()
 

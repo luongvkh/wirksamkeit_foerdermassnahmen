@@ -45,14 +45,33 @@ RATING_LABELS = {
 
 RATING_COLS = list(RATING_LABELS.keys())
 
-# ----- Verfügbarkeit der Maßnahmen im Unternehmen -----
+# ----- Verfügbarkeit der Maßnahmen im Unternehmen (nur binär kodierte, also ohne Familienfreundlichkeit und Frauenanteil) -----
 AVAILABILITY_MAPPING = {
     "availability_flexibility": "In meinem Unternehmen wird flexible Arbeitszeit ermöglicht ...",
     "availability_networks": "In meinem Unternehmen wird die Etablierung und Pflege von diversen sozialen Netzwerken gefördert, um sich untereinander zu organisieren.",
     "availability_mentoring": "In meinem Unternehmen gibt es Mentoring-Programme\xa0",  # (wahrscheinlich von Excel eingefügtes) Leerzeichen am Ende
-    "availability_family_friendliness": None,  # im Datensatz nicht eindeutig
-    "availability_womens_quota": None,  # im Datensatz nicht eindeutig
     "availability_jobsharing": "In meinem Unternehmen wird Jobsharing für Führungspositionen ...",
+}
+
+# ----- Familienfreundlichkeit -----
+FAMILY_FRIENDLINESS_MAPPING = {
+    "Meetingzeiten abgestimmt": "Wie familienfreundlich ist Ihr Unternehmen? [Meetingzeiten werden abgestimmt (liegen z.B. nicht am späten Nachmittag)]",
+    "Väter zur Elternzeit ermutigt": "Wie familienfreundlich ist Ihr Unternehmen? [Väter werden zur Elternzeit ermutigt]",
+    "Väter in Teilzeit": "Wie familienfreundlich ist Ihr Unternehmen? [es gibt Väter, die in Teilzeit arbeiten]",
+    "Reiseverpflichtungen": "Wie familienfreundlich ist Ihr Unternehmen? [es gibt Reiseverpflichtungen]",
+    "Social Events familienverträglich": "Wie familienfreundlich ist Ihr Unternehmen? [Social Events liegen in familienverträglichen Zeiten]",
+    "Kinderbetreuung angeboten": "Wie familienfreundlich ist Ihr Unternehmen? [Unternehmen bietet Kinderbetreuung an]",
+    "Verständnis für kurzfristige Ausfälle": "Wie familienfreundlich ist Ihr Unternehmen? [Kolleg*innen haben Verständnis für kurzfristige Ausfälle und übernehmen Arbeitslast]",
+    "Flexible Zeiten für Arzttermine": "Wie familienfreundlich ist Ihr Unternehmen? [Arbeitszeiten können flexibel gehandhabt werden für Arzttermine oder bei Kitaausfall]",
+}
+
+# ----- Frauenanteil -----
+WOMENS_QUOTA_MAPPING = {
+    "Einzige Frau im Team": "In meinem Unternehmen hat mein Team einen Frauenanteil von ... [ich bin die einzige Frau im Team]",
+    "< 10 %": "In meinem Unternehmen hat mein Team einen Frauenanteil von ... [&lt;10%]",
+    "10-25 %": "In meinem Unternehmen hat mein Team einen Frauenanteil von ... [10-25%]",
+    "25-50 %": "In meinem Unternehmen hat mein Team einen Frauenanteil von ... [25-50%]",
+    "Frauen in Mehrheit": "In meinem Unternehmen hat mein Team einen Frauenanteil von ... [Frauen sind in der Mehrheit]",
 }
 
 # ----- Karrierebarrieren -----
