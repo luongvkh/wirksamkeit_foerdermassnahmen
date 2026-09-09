@@ -365,6 +365,20 @@ with st.expander("Überblick: Gesamtdatensatz", expanded=False):
             st.plotly_chart(fig_i_score_heatmap, width="stretch")
             st.caption("i-Score = Anzahl zutreffender Identitätsmerkmale (1-6)")
 
+            i_score_counts = df["i_score_additiv"].value_counts()
+            # Mindeststichprobengröße von n = 5
+            minorities = i_score_counts[i_score_counts < 5]
+
+            if not minorities.empty:
+                minorities_text = ", ".join(
+                    f"i-Score {int(i_score)} (n={count})"
+                    for i_score, count in minorities.items()
+                )
+                st.warning(
+                    f"**{minorities_text}** -> aufgrund der geringen Stichprobengröße sind diese Werte evtl. statistisch nicht aussagekräftig.",
+                    icon=":material/error:",
+                )
+
         else:
             # Heatmap: i-Score-Kategorie (niedrig, mittel, hoch) × Maßnahmen
             i_score_heatmap_data = []
