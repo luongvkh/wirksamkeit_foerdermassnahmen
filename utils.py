@@ -223,7 +223,7 @@ def calculate_effectiveness(df, selected_avs):
 
     return pd.DataFrame(results)
 
-
+# funktioniert für die binär kodierten Maßnahmen (s. constants.py)
 def calculate_availability(df, selected_avs):
     """
     Berechnet Verfügbarkeit der Maßnahmen im Unternehmen.
