@@ -191,11 +191,12 @@ with st.expander("Überblick: Gesamtdatensatz", expanded=False):
         f":grey[Die folgenden Diagramme basieren auf dem gesamten Datensatz (n = {filter_log['n_final']}), unabhängig von der aktuellen Filterauswahl.]"
     )
 
-    tab1, tab2, tab3 = st.tabs(
+    tab1, tab2, tab3, tab4 = st.tabs(
         [
             "Identitätsmerkmale × Maßnahmen",
             "Karrierebarrieren × Maßnahmen",
             "i-Score × Maßnahmen",
+            "i-Score Verteilung",
         ]
     )
 
@@ -435,6 +436,48 @@ with st.expander("Überblick: Gesamtdatensatz", expanded=False):
             st.caption(
                 "i-Score-Kategorien: niedrig = 1 Merkmal · mittel = 2 Merkmale · hoch ≥ 3 Merkmale"
             )
+        with tab4:
+            # i-Score Verteilung: gefilterte Gruppe vs. Gesamtstichprobe
+            st.markdown("## Überblick: i-Score Verteilung")
+            st.markdown(":grey[Gefilterte Gruppe vs. Gesamtstichprobe.]")
+
+            i_score_vgl = []
+            for score in sorted(df["i_score_additiv"].unique()):
+                n_gesamt = (df["i_score_additiv"] == score).sum()
+                n_profil = (df_filtered["i_score_additiv"] == score).sum()
+                i_score_vgl.append(
+                    {
+                        "i-Score": int(score),
+                        "alle Teilnehmenden": n_gesamt,
+                        "ausgewähltes Profil": n_profil,
+                    }
+                )
+
+            df_i_score_vgl = pd.DataFrame(i_score_vgl)
+            df_i_score_vgl_melted = df_i_score_vgl.melt(
+                id_vars="i-Score",
+                value_vars=["alle Teilnehmenden", "ausgewähltes Profil"],
+                var_name="Gruppe",
+                value_name="Anzahl",
+            )
+
+            fig_i_score_vgl = px.bar(
+                df_i_score_vgl_melted,
+                x="i-Score",
+                y="Anzahl",
+                color="Gruppe",
+                barmode="group",
+                color_discrete_map={
+                    "alle Teilnehmenden": HILFREICH_ROT,
+                    "ausgewähltes Profil": ESSENTIELL_GELB,
+                },
+                labels={
+                    "i-Score": "i-Score (additiv, Summe der Identitätsmerkmale)",
+                    "Anzahl": "Anzahl der Teilnehmenden",
+                },
+                height=520,
+            )
+            st.plotly_chart(fig_i_score_vgl, width="stretch")
 
 st.divider()
 
