@@ -619,11 +619,11 @@ else:
     df_availability_melted = df_availability.melt(
         id_vars=["massnahme_label"],
         value_vars=["perc_available", "perc_not_available"],
-        var_name="status",
+        var_name="Status",
         value_name="Anteil (%)",
     )
 
-    df_availability_melted["status"] = df_availability_melted["status"].map(
+    df_availability_melted["Status"] = df_availability_melted["Status"].map(
         {
             "perc_available": "verfügbar",
             "perc_not_available": "nicht verfügbar",
@@ -634,7 +634,7 @@ else:
         df_availability_melted,
         x="Anteil (%)",
         y="massnahme_label",
-        color="status",
+        color="Status",
         orientation="h",
         barmode="stack",
         color_discrete_map={
@@ -642,7 +642,7 @@ else:
             "nicht verfügbar": HILFREICH_ROT,
         },
         labels={"massnahme_label": ""},
-        category_orders={"status": ["verfügbar", "nicht verfügbar"]},
+        category_orders={"Status": ["verfügbar", "nicht verfügbar"]},
         text="Anteil (%)",
         height=350,
     )
