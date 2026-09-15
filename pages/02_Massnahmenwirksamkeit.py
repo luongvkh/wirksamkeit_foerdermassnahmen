@@ -143,6 +143,323 @@ with st.expander("Datenbereinigung", expanded=False):
 df_filtered = filter_df_dimensions(df, selected_dims, dim_kombination)
 n_filtered = len(df_filtered)
 
+# ----- Häufigkeitsverteilungen: Gesamtdatensatz -----
+with st.expander(
+    f"Häufigkeitsverteilungen: Gesamtdatensatz (n={filter_log['n_final']})",
+    expanded=False,
+):
+    tab1, tab2, tab3, tab4 = st.tabs(
+        [
+            "Identitätsmerkmale",
+            "i-Score (additiv)",
+            "Karrierebarrieren",
+            "Maßnahmenverfügbarkeit",
+        ]
+    )
+
+    with tab1:  # Identitätsmerkmale
+        dim_freq_data = []
+        for col in IDENTITY_COLS:
+            n_dim_true = df[col].sum()
+            dim_freq_data.append(
+                {
+                    "Merkmal": IDENTITY_LABELS[col],
+                    "n": int(n_dim_true),
+                    "Anteil (%)": round(n_dim_true / len(df) * 100, 1),
+                }
+            )
+        df_dim_freq = pd.DataFrame(dim_freq_data).sort_values(
+            "Anteil (%)", ascending=True
+        )
+
+        st.markdown(f"**n gesamt = {len(df)}**")
+        fig_dim_freq = px.bar(
+            df_dim_freq,
+            x="Anteil (%)",
+            y="Merkmal",
+            orientation="h",
+            text="Anteil (%)",
+            color="Anteil (%)",
+            color_continuous_scale="Inferno",
+            range_color=[0, 100],
+            labels={"Merkmal": ""},
+            height=400,
+        )
+        fig_dim_freq.update_layout(coloraxis_showscale=False)
+        fig_dim_freq.update_traces(textposition="outside")
+        st.plotly_chart(fig_dim_freq, key="gesamt_dim_freq", width="stretch")
+        st.dataframe(
+            df_dim_freq[["Merkmal", "n", "Anteil (%)"]],
+            hide_index=True,
+            use_container_width=True,
+        )
+
+    with tab2:  # i-Score
+        i_score_freq = df["i_score_additiv"].value_counts().sort_index().reset_index()
+        i_score_freq.columns = ["i-Score", "n"]
+        i_score_freq["Anteil (%)"] = round(i_score_freq["n"] / len(df) * 100, 1)
+
+        st.markdown(
+            f"**n gesamt = {len(df)} · Ø additiver i-Score = {df['i_score_additiv'].mean():.2f}**"
+        )
+
+        fig_i_score_freq = px.bar(
+            i_score_freq,
+            x="i-Score",
+            y="n",
+            text="Anteil (%)",
+            color="i-Score",
+            color_continuous_scale="Inferno",
+            labels={"n": "Anzahl"},
+            height=400,
+        )
+        fig_i_score_freq.update_layout(coloraxis_showscale=False)
+        fig_i_score_freq.update_traces(texttemplate="%{text}%", textposition="outside")
+        st.plotly_chart(fig_i_score_freq, key="gesamt_i_score_freq", width="stretch")
+        st.dataframe(i_score_freq, hide_index=True, use_container_width=True)
+
+    with tab3:  # Karrierebarrieren
+        barrier_freq_data = []
+        for col in BARRIER_COLS:
+            n_barrier_true = df[col].sum()
+            barrier_freq_data.append(
+                {
+                    "Barriere": BARRIER_LABELS[col],
+                    "n": int(n_barrier_true),
+                    "Anteil (%)": round(n_barrier_true / len(df) * 100, 1),
+                }
+            )
+        df_barrier_freq = pd.DataFrame(barrier_freq_data).sort_values(
+            "Anteil (%)", ascending=True
+        )
+
+        st.markdown(f"**n gesamt = {len(df)}**")
+        fig_barrier_freq = px.bar(
+            df_barrier_freq,
+            x="Anteil (%)",
+            y="Barriere",
+            orientation="h",
+            text="Anteil (%)",
+            color="Anteil (%)",
+            color_continuous_scale="Inferno",
+            range_color=[0, 100],
+            labels={"Barriere": ""},
+            height=400,
+        )
+        fig_barrier_freq.update_layout(coloraxis_showscale=False)
+        fig_barrier_freq.update_traces(textposition="outside")
+        st.plotly_chart(fig_barrier_freq, key="gesamt_barrier_freq", width="stretch")
+        st.dataframe(
+            df_barrier_freq[["Barriere", "n", "Anteil (%)"]],
+            hide_index=True,
+            use_container_width=True,
+        )
+
+    with tab4:  # Maßnahmenverfügbarkeit
+        availability_data = calculate_availability(df, list(RATING_COLS))
+        if not availability_data.empty:
+            availability_df = availability_data[
+                ["massnahme_label", "n_values", "n_available", "perc_available"]
+            ].copy()
+            availability_df.columns = [
+                "Maßnahme",
+                "n gesamt",
+                "n verfügbar",
+                "Anteil verfügbar (%)",
+            ]
+            availability_df = availability_df.sort_values(
+                "Anteil verfügbar (%)", ascending=True
+            )
+
+            st.markdown(f"**n gesamt = {len(df)}**")
+            fig_availability = px.bar(
+                availability_df,
+                x="Anteil verfügbar (%)",
+                y="Maßnahme",
+                orientation="h",
+                text="Anteil verfügbar (%)",
+                color="Anteil verfügbar (%)",
+                color_continuous_scale="Inferno",
+                range_color=[0, 100],
+                labels={"Maßnahme": ""},
+                height=400,
+            )
+            fig_availability.update_layout(coloraxis_showscale=False)
+            fig_availability.update_traces(textposition="outside")
+            st.plotly_chart(
+                fig_availability, key="gesamt_availability", width="stretch"
+            )
+            st.dataframe(availability_df, hide_index=True, use_container_width=True)
+            st.caption(
+                f"""Hinweis: Für *Familienfreundlichkeit* und *Frauenanteil* sind keine Verfügbarkeitsdaten in diesem Format
+                verfügbar. Eine Detailansicht findet sich im Abschnitt **Verfügbarkeit im Unternehmen** weiter unten."""
+            )
+
+# ----- Häufigkeitsverteilungen: Ausgewähltes Profil -----
+with st.expander(
+    f"Häufigkeitsverteilungen: Ausgewähltes Profil (n={n_filtered})", expanded=False
+):
+    tab1, tab2, tab3, tab4 = st.tabs(
+        [
+            "Identitätsmerkmale",
+            "i-Score (additiv)",
+            "Karrierebarrieren",
+            "Maßnahmenverfügbarkeit",
+        ]
+    )
+
+    with tab1:  # Identitätsmerkmale
+        dim_freq_data_filtered = []
+        for col in IDENTITY_COLS:
+            n_dim_true = df_filtered[col].sum()
+            dim_freq_data_filtered.append(
+                {
+                    "Merkmal": IDENTITY_LABELS[col],
+                    "n": int(n_dim_true),
+                    "Anteil (%)": round(n_dim_true / len(df_filtered) * 100, 1),
+                }
+            )
+        df_dim_freq_filtered = pd.DataFrame(dim_freq_data_filtered).sort_values(
+            "Anteil (%)", ascending=True
+        )
+
+        st.markdown(f"**n Profil = {n_filtered}**")
+        fig_dim_freq_filtered = px.bar(
+            df_dim_freq_filtered,
+            x="Anteil (%)",
+            y="Merkmal",
+            orientation="h",
+            text="Anteil (%)",
+            color="Anteil (%)",
+            color_continuous_scale="Inferno",
+            range_color=[0, 100],
+            labels={"Merkmal": ""},
+            height=400,
+        )
+        fig_dim_freq_filtered.update_layout(coloraxis_showscale=False)
+        fig_dim_freq_filtered.update_traces(textposition="outside")
+        st.plotly_chart(fig_dim_freq_filtered, key="profil_dim_freq", width="stretch")
+        st.dataframe(
+            df_dim_freq_filtered[["Merkmal", "n", "Anteil (%)"]],
+            hide_index=True,
+            use_container_width=True,
+        )
+
+    with tab2:  # i-Score (additiv)
+        i_score_freq_filtered = (
+            df_filtered["i_score_additiv"].value_counts().sort_index().reset_index()
+        )
+        i_score_freq_filtered.columns = ["i-Score", "n"]
+        i_score_freq_filtered["Anteil (%)"] = round(
+            i_score_freq_filtered["n"] / len(df_filtered) * 100, 1
+        )
+
+        st.markdown(
+            f"**n Profil = {n_filtered} · Ø i-Score = {df_filtered['i_score_additiv'].mean():.2f}**"
+        )
+
+        fig_i_score_freq_filtered = px.bar(
+            i_score_freq_filtered,
+            x="i-Score",
+            y="n",
+            text="Anteil (%)",
+            color="i-Score",
+            color_continuous_scale="Inferno",
+            labels={"n": "Anzahl"},
+            height=400,
+        )
+        fig_i_score_freq_filtered.update_layout(coloraxis_showscale=False)
+        fig_i_score_freq_filtered.update_traces(
+            texttemplate="%{text}%", textposition="outside"
+        )
+        st.plotly_chart(
+            fig_i_score_freq_filtered, key="profil_iscore_freq", width="stretch"
+        )
+        st.dataframe(i_score_freq_filtered, hide_index=True, use_container_width=True)
+
+    with tab3:  # Karrierebarrieren
+        barrier_freq_data_filtered = []
+        for col in BARRIER_COLS:
+            n_barrier_true = df_filtered[col].sum()
+            barrier_freq_data_filtered.append(
+                {
+                    "Barriere": BARRIER_LABELS[col],
+                    "n": int(n_barrier_true),
+                    "Anteil (%)": round(n_barrier_true / len(df_filtered) * 100, 1),
+                }
+            )
+        df_barrier_freq_filtered = pd.DataFrame(barrier_freq_data_filtered).sort_values(
+            "Anteil (%)", ascending=True
+        )
+
+        st.markdown(f"**n Profil = {n_filtered}**")
+        fig_barrier_freq_filtered = px.bar(
+            df_barrier_freq_filtered,
+            x="Anteil (%)",
+            y="Barriere",
+            orientation="h",
+            text="Anteil (%)",
+            color="Anteil (%)",
+            color_continuous_scale="Inferno",
+            range_color=[0, 100],
+            labels={"Barriere": ""},
+            height=400,
+        )
+        fig_barrier_freq_filtered.update_layout(coloraxis_showscale=False)
+        fig_barrier_freq_filtered.update_traces(textposition="outside")
+        st.plotly_chart(
+            fig_barrier_freq_filtered, key="profil_barrier_freq", width="stretch"
+        )
+        st.dataframe(
+            df_barrier_freq_filtered[["Barriere", "n", "Anteil (%)"]],
+            hide_index=True,
+            use_container_width=True,
+        )
+
+    with tab4:  # Maßnahmenverfügbarkeit
+        availability_data_filtered = calculate_availability(
+            df_filtered, list(RATING_COLS)
+        )
+        if not availability_data_filtered.empty:
+            availability_df_filtered = availability_data_filtered[
+                ["massnahme_label", "n_values", "n_available", "perc_available"]
+            ].copy()
+            availability_df_filtered.columns = [
+                "Maßnahme",
+                "n gesamt",
+                "n verfügbar",
+                "Anteil verfügbar (%)",
+            ]
+            availability_df_filtered = availability_df_filtered.sort_values(
+                "Anteil verfügbar (%)", ascending=True
+            )
+
+            st.markdown(f"**n Profil = {n_filtered}**")
+            fig_availability_df_filtered = px.bar(
+                availability_df_filtered,
+                x="Anteil verfügbar (%)",
+                y="Maßnahme",
+                orientation="h",
+                text="Anteil verfügbar (%)",
+                color="Anteil verfügbar (%)",
+                color_continuous_scale="Inferno",
+                range_color=[0, 100],
+                labels={"Maßnahme": ""},
+                height=400,
+            )
+            fig_availability_df_filtered.update_layout(coloraxis_showscale=False)
+            fig_availability_df_filtered.update_traces(textposition="outside")
+            st.plotly_chart(
+                fig_availability_df_filtered, key="profil_availability", width="stretch"
+            )
+            st.dataframe(
+                availability_df_filtered, hide_index=True, use_container_width=True
+            )
+            st.caption(
+                f"""Hinweis: Für *Familienfreundlichkeit* und *Frauenanteil* sind keine Verfügbarkeitsdaten in diesem Format
+                verfügbar. Eine Detailansicht findet sich im Abschnitt **Verfügbarkeit im Unternehmen** weiter unten."""
+            )
+
 # filter barriers (optional)
 if selected_barriers:
     if barrier_kombination:
